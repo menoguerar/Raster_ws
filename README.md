@@ -31,7 +31,8 @@ Complete la tabla:
 
 | Integrante | github nick |
 |------------|-------------|
-|            |             |
+|       Marlon Noguera     |      menoguerar       |
+|      Sebastian Medina     |      srmedinac       |
 
 ## Discusión
 
