@@ -7,9 +7,10 @@ import frames.processing.*;
 Scene scene;
 Frame frame;
 Vector v1, v2, v3;
+
 // timing
 TimingTask spinningTask;
-boolean yDirection;
+boolean yDirection, antialiasing,shading;
 // scaling is a power of 2
 int n = 4;
 
@@ -86,6 +87,10 @@ float edgeFunction( Vector a, Vector b, Vector c)
 { 
     return (frame.location(c).x() - frame.location(a).x()) * (frame.location(b).y() - frame.location(a).y()) - (frame.location(c).y() - frame.location(a).y()) * (frame.location(b).x() - frame.location(a).x()); 
 }
+float edgeFunction( float a_x,  float a_y , float b_x, float b_y, float c_x,  float c_y) 
+{ 
+    return (((c_x - a_x) * (b_y - a_y)) - ((c_y - a_y) * (b_x - a_x))); 
+}
 void triangleRaster() {
   // frame.location converts points from world to frame
   // here we convert v1 to illustrate the idea
@@ -128,6 +133,40 @@ void triangleRaster() {
     point(round(200), round(200));
     popStyle();
   }
+  
+  if(antialiasing){
+  pushStyle();
+  stroke(125, 125, 125, 125);
+  int sizeGrid = (int) pow(2,n-1);
+  for(int  i = -sizeGrid ; i < sizeGrid; i++ ){
+    for(int j = -sizeGrid; j < sizeGrid; j++){
+        if (verify(i,j))
+              rect(i,j,1,1);
+
+    }
+    
+  }
+   popStyle();
+  }
+  if(shading){
+    float shadeArea = edgeFunction(frame.location(v1).x(), frame.location(v1).y(), frame.location(v2).x(), frame.location(v2).y(), frame.location(v3).x(), frame.location(v3).y() );
+    int sizeGrid = (int) pow(2,n-1);
+    for(int  i = -sizeGrid ; i < sizeGrid; i++ ){
+      for(int j = -sizeGrid; j < sizeGrid; j++){
+        float K_v1v2 = edgeFunction(frame.location(v1).x(), frame.location(v1).y(), frame.location(v2).x(), frame.location(v2).y(), i, j ),
+              K_v2v3 = edgeFunction(frame.location(v2).x(), frame.location(v2).y(), frame.location(v3).x(), frame.location(v3).y(), i, j ),
+              K_v3v1 = edgeFunction(frame.location(v3).x(), frame.location(v3).y(), frame.location(v1).x(), frame.location(v1).y(), i, j );
+          if ((K_v1v2 >=0  && K_v2v3 >= 0 && K_v3v1 >= 0) || (K_v1v2 <=0  && K_v2v3 <=0 && K_v3v1 <=0) ){
+                pushStyle();
+                colorMode(RGB, 1);
+                stroke( K_v1v2/shadeArea, K_v2v3/shadeArea, K_v3v1/shadeArea);
+                point(i,j);
+                popStyle();
+              }   
+      }
+    
+    }
+  }
 }
 
 
@@ -169,7 +208,12 @@ void drawTriangleHint() {
   point(v3.x(), v3.y());
   popStyle();
 }
-
+boolean verify( int x, int y){
+ float  K_v1v2 = edgeFunction(frame.location(v1).x(), frame.location(v1).y(), frame.location(v2).x(), frame.location(v2).y(), x, y ),
+        K_v2v3 = edgeFunction(frame.location(v2).x(), frame.location(v2).y(), frame.location(v3).x(), frame.location(v3).y(), x, y ),
+        K_v3v1 = edgeFunction(frame.location(v3).x(), frame.location(v3).y(), frame.location(v1).x(), frame.location(v1).y(), x, y );
+        return (((K_v1v2 >=0  && K_v2v3 >= 0 && K_v3v1 >= 0) || (K_v1v2 <=0  && K_v2v3 <=0 && K_v3v1 <=0)  ) && ( -abs(K_v1v2) < 1.0 || -abs(K_v2v3) < 1.0 || -abs(K_v3v1) < 1.0  )  );
+}
 void keyPressed() {
   if (key == 'g')
     gridHint = !gridHint;
@@ -194,4 +238,8 @@ void keyPressed() {
       spinningTask.run(20);
   if (key == 'y')
     yDirection = !yDirection;
+  if (key == 'a')
+    antialiasing = !antialiasing;
+  if (key == 's')
+    shading = !shading;
 }
